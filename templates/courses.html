@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Courses{% endblock %}
+
+{% block content %}
+<div class="bradcam_area breadcam_bg overlay2">
+    <h3>Our Courses</h3>
+</div>
+<div class="popular_courses plus_padding">
+    <div class="container">
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="course_nav">
+                    <nav>
+                        <ul class="nav" id="myTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab"
+                                    aria-controls="home" aria-selected="true">All Courses</a>
+                            </li>
+                            {% for category in categoryes %}
+                            <li class="nav-item">
+                                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab"
+                                    aria-controls="home" aria-selected="true">{{ category.name }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="all_courses">
+        <div class="container">
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                    <div class="row">
+                        {% for course in courses %}
+                        <div class="col-xl-4 col-lg-4 col-md-6">
+                            <div class="single_courses">
+                                <div class="thumb">
+                                    <a href="{% url 'course_details' course.id %}">
+                                        <img src="{{ course.banner.url }}" alt="">
+                                    </a>
+                                </div>
+                                <div class="courses_info">
+                                    <span>{{ course.category }}</span>
+                                    <h3><a href="{% url 'course_details' course.id %}">{{ course.title }}</a></h3>
+                                    <span>{{ course.type }}</span>
+                                    <div class="star_prise d-flex justify-content-between">
+                                        <div class="prise">
+                                            <span class="active_prise">
+                                                BDT. {{ course.price }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
