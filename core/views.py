@@ -17,7 +17,7 @@ def course_details(request, id):
     course = get_object_or_404(Course, id=id)
     return render(request, "course_details.html", {'course':course})
 
-def payment(request):
+def payment(request, id):
     mypayment = SSLCSession(
     sslc_is_sandbox=True,
     sslc_store_id=os.environ.get('sslc_store_id'),
@@ -33,7 +33,7 @@ def payment(request):
     ipn_url=status_url
     )
 
-    enroll = Course.objects.get(request, id=id)
+    enroll = get_object_or_404(Course, id=id)
 
     mypayment.set_product_integration(
     total_amount=Decimal(enroll.price),
