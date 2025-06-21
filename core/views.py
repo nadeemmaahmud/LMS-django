@@ -1,21 +1,29 @@
 import os
+from django.contrib.auth import get_backends
 from django.shortcuts import render, get_object_or_404, redirect, HttpResponse
 from . models import Course, Category
-
+from enrollment.models import Enrollment, Batch
+from users.models import CustomUser
+from django.urls import reverse
 from decimal import Decimal
 from sslcommerz_python_api import SSLCSession
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import login
 
 def home(request):
     return render(request, 'index.html')
 
 def courses(request):
-    categoryes = Category.objects.all() 
+    categories = Category.objects.all() 
     courses = Course.objects.all()
-    return render(request, 'courses.html', {'courses':courses, 'categoryes':categoryes})
+    return render(request, 'courses.html', {'courses': courses, 'categories': categories})
 
 def course_details(request, id):
     course = get_object_or_404(Course, id=id)
-    return render(request, "course_details.html", {'course':course})
+    already_enrolled = False
+    if request.user.is_authenticated:
+        already_enrolled = Enrollment.objects.filter(user=request.user, course=course).exists()
+    return render(request, "course_details.html", {'course': course, 'already_enrolled': already_enrolled})
 
 def payment(request, id):
     mypayment = SSLCSession(
@@ -24,7 +32,7 @@ def payment(request, id):
     sslc_store_pass=os.environ.get('sslc_store_pass')
     )
 
-    status_url = request.build_absolute_uri('sslc/status')
+    status_url = request.build_absolute_uri(reverse('payment_status', kwargs={'id': id}))
 
     mypayment.set_urls(
     success_url=status_url,
@@ -33,26 +41,29 @@ def payment(request, id):
     ipn_url=status_url
     )
 
-    enroll = get_object_or_404(Course, id=id)
+    course = get_object_or_404(Course, id=id)
 
     mypayment.set_product_integration(
-    total_amount=Decimal(enroll.price),
+    total_amount=Decimal(course.price),
     currency='BDT',
-    product_category=enroll.category,
-    product_name=enroll.title,
+    product_category=course.category,
+    product_name=course.title,
     num_of_item=2,
     shipping_method='YES',
     product_profile='None'
     )
 
+    user = get_object_or_404(CustomUser, id=request.user.id)
+
     mypayment.set_customer_info(
-    name='Nadim Mahmud',
-    email='nadeemmaahmud@email.com',
-    address1='Chakipara, Bagha',
-    address2='Rajshahi, Bangladesh',
-    city='Rajshahi', postcode='6280',
-    country='Bangladesh',
-    phone='01715666904'
+    name=user,
+    email=user.email if user.email else 'N/A',
+    address1=user.address_line_1 if user.address_line_1 else 'N/A',
+    address2=user.address_line_1 if user.address_line_1 else 'N/A',
+    city='N/A',
+    postcode='N/A',
+    country='N/A',
+    phone='01715666904',
     )
 
     mypayment.set_shipping_info(
@@ -63,20 +74,42 @@ def payment(request, id):
     country='Bangladesh'
     )
 
-    ''' If you want to post some additional values
+    
     mypayment.set_additional_values(
-    value_a='cusotmer@email.com',
-    value_b='portalcustomerid',
-    value_c='1234',
-    value_d='uuid'
-    )'''
+    value_a=user.id,
+    #value_b='portalcustomerid',
+    #value_c='1234',
+    #value_d='uuid'
+    )
 
     response_data = mypayment.init_payment()
 
-    # You can Print the response data
-    print(response_data)
+    gateway_url = response_data.get('GatewayPageURL')
+    if gateway_url:
+        return redirect(gateway_url)
+    else:
+        error_message = response_data.get('failedreason', 'Payment gateway initialization failed. Please try again later.')
+        return HttpResponse(error_message, status=500)
 
-    return redirect(response_data['GatewayPageURL'])
+@csrf_exempt
+def payment_status(request, id):
+    if request.method == "POST":
+        status = request.POST.get('status')
+        
+        if status == 'VALID':
+            user = request.POST.get('value_a')
+            user = get_object_or_404(CustomUser, id=user)
+            course = get_object_or_404(Course, id=id)
+            batch = get_object_or_404(Batch, number=0)
+            
+            enrollment = Enrollment.objects.create(user=user, course=course, batch=batch)
+            enrollment.save()
+            backend = get_backends()[0]
+            user.backend = f"{backend.__module__}.{backend.__class__.__name__}"
+            login(request, user)
+        else:
+            print(f"Payment failed for course ID: {id}. Status: {status}")
+    else:
+        print("Invalid request method. Only POST requests are allowed.")
 
-def payment_status(request):
-    return HttpResponse('Payment status page')
+    return redirect('enrolls')

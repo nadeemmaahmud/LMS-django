@@ -132,7 +132,11 @@
                             <i class="fa fa-play"></i>
                         </a>
                     </div>
-                    <a href="{% url 'payment' course.id %}" class="boxed_btn mt-5">Enroll</a>
+                    {% if already_enrolled %}
+                        <button class="boxed_btn mt-5" style="background-color: rgb(168, 168, 168);" disabled>Already Enrolled</button>
+                    {% else %}
+                        <a href="{% url 'payment' course.id %}" class="boxed_btn mt-5">Enroll</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

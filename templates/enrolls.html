@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enrollment{% endblock %}
+
+{% block content %}
+    <div class="bradcam_area breadcam_bg overlay2">
+        <h3>Your Enrollments</h3>
+    </div>
+    <div class="container" style="padding-top: 2rem; padding-bottom: 1rem;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for enroll in enrolls %}
+            <li
+                style="background: #9d9d9d; margin-bottom: 1rem; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.03); display: flex; align-items: center;">
+                <img src="{{ enroll.course.banner.url }}" alt="{{ enroll.course.name }} Banner"
+                    style="height: 150px; width: auto; margin-right: 1rem; border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; margin-right: 1rem;">
+                    <h6 style="font-size: 1.1rem; color: #ececec">Batch : {{ enroll.batch.number }}</h6>
+                    <h3 style="font-size: 1.7rem; color: #ececec;">Course : {{ enroll.course.title }}</h3>
+                    <h6 style="font-size: 1.1rem; color: #ececec;">Enrolled : {{ enroll.enroll_date }}</h6>
+                </div>
+                <div style="margin-left: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <a href="" class="btn btn-success">Continue Course</a>
+                    <form action="" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Reset Course</button>
+                    </form>
+                </div>
+            </li>
+            {% empty %}
+            <li style="text-align: center; color: #a0aec0;">No enrollments found.</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}
